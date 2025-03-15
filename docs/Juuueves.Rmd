@@ -1,0 +1,256 @@
+---
+title: "Registro futbolístico - Jueves del Cordero Susurrador"
+#author: 
+#  - name: "Daniel Aromí"
+#    affiliation: "IIEP (UBA-CONICET), FCE, UBA & FCE, UCA."
+#    email: "aromi.daniel@gmail.com"
+#  - name: "María Paula Bonel"
+#    affiliation: "IIEP (UBA-CONICET), FCE, UBA & FCE, UCA."
+#    email: "mpaulabone@gmail.com"
+#  - name: "Llada Martín"
+#    affiliation: "IIEP (UBA-CONICET), FCE, UBA."
+#    email: "lladamartin@gmail.com"
+#date: "`r format(Sys.Date(), '%B, %Y')`"
+output:
+  html_document:
+    theme: united
+    #toc: true
+    #toc_depth: 3
+runtime: shiny  # Habilita Shiny dentro del reporte
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+Sys.setlocale("LC_TIME", "es_ES.UTF-8")
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/user/Documents/GitHub/JuevesdelCorderoSusurrador")
+```
+
+## {.tabset}
+
+### Bienvenidos
+
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Motivación</span>
+
+En este sitio web van a encontrar un registro futbolero semanal del evento mas esperado de la semana: Jueves del Cordero Susurrador
+
+
+![](C:/Users/user/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\parrot_1f99c.png)
+
+
+### Registro
+
+```{r code1,include=F, warning=FALSE }
+#load libraries
+library(tidyverse)
+library(gt)
+library(gtExtras)
+library(plotly)
+library(ggrepel)
+library(lubridate)
+library(readxl)
+library(reactable)
+library(shiny)
+```
+
+```{r code2,include=FALSE, warning=FALSE }
+####### Importo datos
+
+# Base jugadores
+df_players = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xlsx",sheet="Jugadores")
+df_players$label = paste(df_players$Player_nickname,"-",df_players$Player_name, df_players$Player_lastname,sep=" ")
+
+# Base equipos por fecha
+df_teams_date = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xlsx",sheet="Equipo")
+
+# Base goles por fecha
+df_goals_date = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xlsx",sheet="Goles")
+
+####### Pre-procesamiento
+# Base equipos y goles por jugador por fecha
+df_fecha_player = df_teams_date %>% left_join(df_goals_date,by=c("Fecha","Equipo","Player_nickname"))
+names(df_fecha_player) = tolower(names(df_fecha_player))
+
+# Base fecha-equipo-resultado LABEL
+df_fecha_goles = df_fecha_player %>% group_by(fecha,equipo) %>% summarize(goles = sum(goles)) 
+df_fecha_goles = as_tibble(df_fecha_goles)
+df_fecha_goles = df_fecha_goles %>% group_by(fecha) %>% spread(equipo,goles) %>%
+mutate(resultado_final_naranja = case_when(Naranja > Celeste ~ "G_naranja",
+    Naranja < Celeste ~ "P_naranja",
+    Naranja == Celeste ~ "E_naranja"),
+resultado_final_celetes = case_when(Naranja > Celeste ~ "P_celetes",
+    Naranja < Celeste ~ "G_celetes",
+    Naranja == Celeste ~ "E_celetes")) %>% select(-Celeste,-Naranja)
+df_fecha_goles = as_tibble(df_fecha_goles)
+names(df_fecha_goles)[2:length(df_fecha_goles)] = c("Naranja","Celeste")
+df_fecha_goles = df_fecha_goles %>% gather(equipo,resultado_label,2:length(df_fecha_goles))
+df_fecha_goles$resultado_label = substr(df_fecha_goles$resultado_label,1,1)
+df_fecha_goles = df_fecha_goles %>% mutate(puntos = case_when(resultado_label=="E"~1,
+resultado_label=="P"~0,
+resultado_label=="G"~3))
+
+# Merge
+df_fecha_player = df_fecha_player %>% left_join(df_fecha_goles,by=c("fecha","equipo"))
+
+
+# Parametros
+ultima_fecha = max(as.Date(df_fecha_player$fecha))
+fecha_last_six <- as.Date(ultima_fecha) - weeks(6)  
+fechas_jugadas = length(unique(df_fecha_player$fecha))
+
+# Tablas
+
+#tabla general
+
+df_tabla_general = df_fecha_player %>% group_by(player_nickname) %>% summarize(jugados = n_distinct(fecha),
+ganados = sum(resultado_label=="G"),
+empatados = sum(resultado_label=="E"),
+perdidos = sum(resultado_label=="P"),
+goles = sum(goles),
+puntos = sum(puntos)
+)
+
+df_rdo_ultimos = df_fecha_player %>% filter(fecha>=fecha_last_six) %>% group_by(player_nickname) %>% 
+summarize(ultimos_partidos = paste(resultado_label,collapse=" "))
+
+df_tabla_general = df_tabla_general %>% left_join(df_rdo_ultimos ,by=c("player_nickname"))
+
+#tabla por jugador
+
+df_tabla_jugador = df_fecha_player
+
+
+# Resultado ultima fecha
+df_ultima_fecha_resultado = df_tabla_jugador %>% group_by(fecha,equipo) %>% summarize(goles=sum(goles))
+df_ultima_fecha_resultado = as_tibble(df_ultima_fecha_resultado)
+df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% filter(fecha==ultima_fecha)
+df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% spread(equipo,goles)
+df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% select(-fecha)
+
+
+```
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Resultado última fecha</span>
+
+```{r code3,include=T, warning=FALSE,echo=FALSE}
+#table gt 
+
+df_ultima_fecha_resultado %>%
+  gt() %>%
+  #tab_header(
+  #  title = md("**Resultado de la última fecha**")
+  #) %>%
+  tab_source_note(
+    md(paste0(
+      "**Última fecha:** ", format(as.Date(ultima_fecha), "%d %B, %Y"), "  \n",  # Salto de línea
+      "**Fechas con registro:** ", fechas_jugadas
+    ))
+  )
+``` 
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Alineación</span>
+
+```{r code3p,include=T, warning=FALSE,echo=FALSE}
+#table gt 
+
+# Alineacion
+
+df_ultima_fecha_equipo = df_tabla_jugador %>% filter(fecha == ultima_fecha)
+df_ultima_fecha_equipo = df_ultima_fecha_equipo %>% select(fecha,equipo,player_nickname)
+df_ultima_fecha_equipo = data.frame(Celeste = unique(df_ultima_fecha_equipo$player_nickname[df_ultima_fecha_equipo$equipo=="Celeste"]),
+Naranja = unique(df_ultima_fecha_equipo$player_nickname[df_ultima_fecha_equipo$equipo=="Naranja"]))
+df_ultima_fecha_equipo = as_tibble(df_ultima_fecha_equipo)
+
+
+df_ultima_fecha_equipo  %>%
+  gt() #%>%
+  #tab_header(
+  #  title = md("**Alineación**")
+  #) 
+``` 
+
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Estadística por jugador</span>
+
+```{r code3pp,include=T, warning=FALSE,echo=FALSE}
+# Resultado por player
+reactable(df_tabla_general,
+  bordered = TRUE, striped = TRUE, highlight = TRUE, resizable = TRUE,
+  defaultSorted = list(goles = "desc"),  # Ordenar por puntos de mayor a menor
+  columns = list(
+    player_nickname = colDef(name = "Jugador"),
+    jugados = colDef(name = "Jugados", align = "center"),
+    ganados = colDef(name = "Ganados", align = "center"),
+    empatados = colDef(name = "Empatados", align = "center"),
+    perdidos = colDef(name = "Perdidos", align = "center"),
+    goles = colDef(name = "Goles", align = "center"),
+    puntos = colDef(name = "Puntos", align = "center", sortable = TRUE),  # Asegurar que sea ordenable
+    ultimos_partidos = colDef(name = "Ultimas seies fechas", align = "center", sortable = TRUE)  # Asegurar que sea ordenable
+
+  ),
+  showSortable = TRUE  # Permite ordenar cualquier columna manualmente
+)
+
+``` 
+ 
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Evolución de Puntos y Goles por Jugador</span>
+
+```{r code4,include=T, warning=FALSE,echo=FALSE}
+
+shinyApp(
+  ui = fluidPage(
+    titlePanel("Evolución de Puntos y Goles por Jugador"),
+    
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("player", "Selecciona un Jugador:", 
+                    choices = unique(df_tabla_jugador$player_nickname),
+                    selected = unique(df_tabla_jugador$player_nickname)[1])
+      ),
+      
+      mainPanel(
+        plotlyOutput("grafico_puntos"),  # 📊 Gráfico de puntos (arriba)
+        plotlyOutput("grafico_goles")   # 📊 Gráfico de goles (debajo)
+      )
+    )
+  ),
+  
+  server = function(input, output) {
+    
+    # Calcular el máximo de goles anotados en un solo partido
+    max_goles <- max(df_tabla_jugador$goles, na.rm = TRUE)
+
+    datos_filtrados <- reactive({
+      df_tabla_jugador %>% 
+        filter(player_nickname == input$player)
+    })
+    
+    # Gráfico de Puntos con eje Y de 1 a 3
+    output$grafico_puntos <- renderPlotly({
+      p <- ggplot(datos_filtrados(), aes(x = as.Date(fecha), y = puntos, 
+                                         text = paste("Fecha:", format(as.Date(fecha), "%d %B %Y"),
+                                                      "<br>Puntos:", puntos))) +
+        geom_line(color = "red", size = 1) +
+        geom_point(color = "red", size = 3) +
+        labs(title = paste("Evolución de Puntos de", input$player),
+             x = "Fecha", y = "Puntos") +
+        scale_y_continuous(limits = c(1, 3)) +  # Fijar eje Y de Puntos entre 1 y 3
+        theme_minimal()
+      
+      ggplotly(p, tooltip = "text")  # Etiquetas emergentes mejoradas
+    })
+    
+    # Gráfico de Goles con eje Y de 0 al máximo goleador
+    output$grafico_goles <- renderPlotly({
+      g <- ggplot(datos_filtrados(), aes(x = as.Date(fecha), y = goles, 
+                                         text = paste("Fecha:", format(as.Date(fecha), "%d %B %Y"),
+                                                      "<br>Goles:", goles))) +
+        geom_line(color = "blue", size = 1) +
+        geom_point(color = "blue", size = 3) +
+        labs(title = paste("Evolución de Goles de", input$player),
+             x = "Fecha", y = "Goles") +
+        scale_y_continuous(limits = c(0, max_goles)) +  # Fijar eje Y de 0 al máximo goleador
+        theme_minimal()
+      
+      ggplotly(g, tooltip = "text")  # Etiquetas emergentes mejoradas
+    })
+  }
+)
+
+```
