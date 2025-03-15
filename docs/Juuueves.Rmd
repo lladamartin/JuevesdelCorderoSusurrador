@@ -17,6 +17,9 @@ output:
     #toc: true
     #toc_depth: 3
 runtime: shiny  # Habilita Shiny dentro del reporte
+#runtime: auto  # En lugar de shiny, usa "auto"
+#knit:
+#  output_dir: "docs"
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
@@ -230,8 +233,8 @@ shinyApp(
         geom_point(color = "red", size = 3) +
         labs(title = paste("Evolución de Puntos de", input$player),
              x = "Fecha", y = "Puntos") +
-        scale_y_continuous(limits = c(1, 3)) +  # Fijar eje Y de Puntos entre 1 y 3
-        theme_minimal()
+        scale_y_continuous(limits = c(0, 3)) +  # Fijar eje Y de Puntos entre 1 y 3
+        theme_classic()
       
       ggplotly(p, tooltip = "text")  # Etiquetas emergentes mejoradas
     })
@@ -246,7 +249,7 @@ shinyApp(
         labs(title = paste("Evolución de Goles de", input$player),
              x = "Fecha", y = "Goles") +
         scale_y_continuous(limits = c(0, max_goles)) +  # Fijar eje Y de 0 al máximo goleador
-        theme_minimal()
+        theme_classic()
       
       ggplotly(g, tooltip = "text")  # Etiquetas emergentes mejoradas
     })
