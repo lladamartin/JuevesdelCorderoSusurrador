@@ -1,0 +1,12 @@
+name: Juuueves
+title: Juuueves
+username: martin-llada
+account: martin-llada
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14253539
+bundleId: 9948687
+url: https://martin-llada.shinyapps.io/Juuueves/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

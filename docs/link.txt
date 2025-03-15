@@ -1,1 +1,7 @@
+#archivo temporal- extraer link de "Output created:". Ejemplo:
+C:/Users/user/AppData/Local/Temp/RtmpwJuCQ0/fileb9206f06631/
+C:/Users/user/AppData/Local/Temp/Rtmpcn3kXV/file5d6472eb64c8
+
+
 https://lladamartin.github.io/JuevesdelCorderoSusurrador/Juuueves.html
+
