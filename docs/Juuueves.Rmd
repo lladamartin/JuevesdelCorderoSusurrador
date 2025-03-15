@@ -16,10 +16,7 @@ output:
     theme: united
     #toc: true
     #toc_depth: 3
-runtime: shiny  # Habilita Shiny dentro del reporte
-#runtime: auto  # En lugar de shiny, usa "auto"
-#knit:
-#  output_dir: "docs"
+#runtime: shiny  # Habilita Shiny dentro del reporte
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
@@ -191,11 +188,14 @@ reactable(df_tabla_general,
 )
 
 ``` 
- 
-##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Evolución de Puntos y Goles por Jugador</span>
+```{r code4, eval=FALSE, warning=FALSE, include=FALSE}
+if (2==1){
+###### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Evolución de Puntos y Goles por Jugador</span>
+}
+``` 
 
-```{r code4,include=T, warning=FALSE,echo=FALSE}
-
+```{r code4a, eval=FALSE, warning=FALSE, include=FALSE}
+if (2==1){
 shinyApp(
   ui = fluidPage(
     titlePanel("Evolución de Puntos y Goles por Jugador"),
@@ -256,4 +256,7 @@ shinyApp(
   }
 )
 
+}
 ```
+
+
