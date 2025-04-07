@@ -29,9 +29,9 @@ knitr::opts_knit$set(root.dir = "C:/Users/user/Documents/GitHub/JuevesdelCordero
 
 ### Bienvenidos
 
-##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Motivación</span>
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Juevezzz 💋 </span>
 
-En este sitio web van a encontrar un registro futbolero semanal del evento mas esperado de la semana: Jueves del Cordero Susurrador
+En este sitio web van a encontrar el registro futbolero semanal del evento mas esperado de la semana: Jueves del Cordero Susurrador
 
 
 ![](C:/Users/user/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\parrot_1f99c.png)
@@ -65,9 +65,16 @@ df_teams_date = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xls
 # Base goles por fecha
 df_goals_date = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xlsx",sheet="Goles")
 
+# Base jugadores grupo
+df_players_grupo = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.xlsx",sheet="Fijo")
+
+```
+
+```{r code2p,include=FALSE, warning=FALSE }
 ####### Pre-procesamiento
 # Base equipos y goles por jugador por fecha
-df_fecha_player = df_teams_date %>% left_join(df_goals_date,by=c("Fecha","Equipo","Player_nickname"))
+df_fecha_player = df_goals_date
+
 names(df_fecha_player) = tolower(names(df_fecha_player))
 
 # Base fecha-equipo-resultado LABEL
@@ -91,12 +98,18 @@ resultado_label=="G"~3))
 # Merge
 df_fecha_player = df_fecha_player %>% left_join(df_fecha_goles,by=c("fecha","equipo"))
 
+```
+
+```{r code2pp,include=FALSE, warning=FALSE }
 
 # Parametros
 ultima_fecha = max(as.Date(df_fecha_player$fecha))
 fecha_last_six <- as.Date(ultima_fecha) - weeks(6)  
 fechas_jugadas = length(unique(df_fecha_player$fecha))
+fechas_jugadas_all = sort(as.Date(unique(df_fecha_player$fecha)))
+```
 
+```{r code2ppp,include=FALSE, warning=FALSE }
 # Tablas
 
 #tabla general
@@ -137,8 +150,22 @@ df_ultima_fecha_resultado$Celeste=df_ultima_fecha_resultado$Celeste+gol_en_contr
 }
   
 
-
 ```
+
+```{r code2v2,include=FALSE, warning=FALSE }
+df_panel <- df_players_grupo %>%
+  expand_grid(fecha = fechas_jugadas_all) %>%
+  arrange(Player_name, fecha) %>% select(Player_nickname,fecha)
+names(df_panel) = tolower(names(df_panel))
+
+df_panel = df_panel %>% left_join(df_fecha_player[,c("player_nickname","equipo","fecha")],by=c("player_nickname","fecha"))
+
+missing_counts <- df_panel %>%
+  group_by(player_nickname) %>%
+  summarise(missing_count = sum(is.na(equipo))) %>% arrange(desc(missing_count))
+names(missing_counts) = c("Jugador","Numero de ausencias")
+```
+
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Resultado última fecha</span>
 
 ```{r code3,include=T, warning=FALSE,echo=FALSE}
@@ -156,9 +183,26 @@ df_ultima_fecha_resultado %>%
     ))
   )
 ``` 
+
+```{r code4,include=T, warning=FALSE,echo=FALSE}
+#table gt 
+
+missing_counts %>% head(5) %>%
+  gt() %>%
+  #tab_header(
+  #  title = md("**Tabla de Loros 🦜**")
+  #) %>%
+  tab_source_note(
+    md(paste0(
+      "**Última fecha:** ", format(as.Date(ultima_fecha), "%d %B, %Y"), "  \n",  # Salto de línea
+      "**Fechas con registro:** ", fechas_jugadas
+    ))
+  )
+``` 
+
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Alineación</span>
 
-```{r code3p,include=T, warning=FALSE,echo=FALSE}
+```{r code5,include=T, warning=FALSE,echo=FALSE}
 #table gt 
 
 # Alineacion
@@ -179,7 +223,7 @@ df_ultima_fecha_equipo  %>%
 
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Estadística por jugador</span>
 
-```{r code3pp,include=T, warning=FALSE,echo=FALSE}
+```{r code6,include=T, warning=FALSE,echo=FALSE}
 # Resultado por player
 reactable(df_tabla_general,
   bordered = TRUE, striped = TRUE, highlight = TRUE, resizable = TRUE,
@@ -199,13 +243,13 @@ reactable(df_tabla_general,
 )
 
 ``` 
-```{r code4, eval=FALSE, warning=FALSE, include=FALSE}
+```{r code6p, eval=FALSE, warning=FALSE, include=FALSE}
 if (2==1){
 ###### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Evolución de Puntos y Goles por Jugador</span>
 }
 ``` 
 
-```{r code4a, eval=FALSE, warning=FALSE, include=FALSE}
+```{r code7, eval=FALSE, warning=FALSE, include=FALSE}
 if (2==1){
 shinyApp(
   ui = fluidPage(
