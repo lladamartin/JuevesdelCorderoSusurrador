@@ -184,22 +184,6 @@ df_ultima_fecha_resultado %>%
   )
 ``` 
 
-```{r code4,include=T, warning=FALSE,echo=FALSE}
-#table gt 
-
-missing_counts %>% head(5) %>%
-  gt() %>%
-  #tab_header(
-  #  title = md("**Tabla de Loros 🦜**")
-  #) %>%
-  tab_source_note(
-    md(paste0(
-      "**Última fecha:** ", format(as.Date(ultima_fecha), "%d %B, %Y"), "  \n",  # Salto de línea
-      "**Fechas con registro:** ", fechas_jugadas
-    ))
-  )
-``` 
-
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Alineación</span>
 
 ```{r code5,include=T, warning=FALSE,echo=FALSE}
@@ -219,6 +203,23 @@ df_ultima_fecha_equipo  %>%
   #tab_header(
   #  title = md("**Alineación**")
   #) 
+``` 
+##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Registro de 🦜</span>
+
+```{r code4,include=T, warning=FALSE,echo=FALSE}
+#table gt 
+
+missing_counts %>% head(5) %>%
+  gt() %>%
+  #tab_header(
+  #  title = md("**Tabla de Loros 🦜**")
+  #) %>%
+  tab_source_note(
+    md(paste0(
+      "**Última fecha:** ", format(as.Date(ultima_fecha), "%d %B, %Y"), "  \n",  # Salto de línea
+      "**Fechas con registro:** ", fechas_jugadas
+    ))
+  )
 ``` 
 
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Estadística por jugador</span>
