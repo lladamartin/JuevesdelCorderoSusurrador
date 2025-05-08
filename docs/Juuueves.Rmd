@@ -22,7 +22,7 @@ output:
 ```{r setup, include=FALSE, warning=FALSE}
 Sys.setlocale("LC_TIME", "es_ES.UTF-8")
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "C:/Users/user/Documents/GitHub/JuevesdelCorderoSusurrador")
+knitr::opts_knit$set(root.dir = "C:/Users/Maiten Izquierdo/Documents/GitHub/JuevesdelCorderoSusurrador")
 ```
 
 ## {.tabset}
@@ -34,7 +34,7 @@ knitr::opts_knit$set(root.dir = "C:/Users/user/Documents/GitHub/JuevesdelCordero
 En este sitio web van a encontrar el registro futbolero semanal del evento mas esperado de la semana: Jueves del Cordero Susurrador
 
 
-![](C:/Users/user/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\parrot_1f99c.png)
+![](C:/Users/Maiten Izquierdo/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\parrot_1f99c.png)
 
 
 ### Registro
