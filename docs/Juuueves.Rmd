@@ -139,6 +139,7 @@ df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% filter(fecha==ultima_f
 df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% spread(equipo,goles)
 df_ultima_fecha_resultado = df_ultima_fecha_resultado %>% select(-fecha)
 
+if (2==1){
 if ("En contra" %in% df_goals_date$Player_nickname[df_goals_date$Fecha==ultima_fecha]){
 team_gol_en_contra = df_goals_date$Equipo[df_goals_date$Fecha==ultima_fecha & df_goals_date$Player_nickname=="En contra"]  
 gol_en_contra = df_goals_date$Goles[df_goals_date$Fecha==ultima_fecha & df_goals_date$Player_nickname=="En contra"]  
@@ -146,6 +147,7 @@ if (team_gol_en_contra=="Celeste"){
 df_ultima_fecha_resultado$Celeste=df_ultima_fecha_resultado$Celeste+gol_en_contra
 }else{
   df_ultima_fecha_resultado$Naranja=df_ultima_fecha_resultado$Naranja+gol_en_contra
+}
 }
 }
   
@@ -191,7 +193,7 @@ df_ultima_fecha_resultado %>%
 
 # Alineacion
 
-df_ultima_fecha_equipo = df_tabla_jugador %>% filter(fecha == ultima_fecha)
+df_ultima_fecha_equipo = df_tabla_jugador %>% filter(fecha == ultima_fecha & player_nickname!="En contra")
 df_ultima_fecha_equipo = df_ultima_fecha_equipo %>% select(fecha,equipo,player_nickname)
 df_ultima_fecha_equipo = data.frame(Celeste = unique(df_ultima_fecha_equipo$player_nickname[df_ultima_fecha_equipo$equipo=="Celeste"]),
 Naranja = unique(df_ultima_fecha_equipo$player_nickname[df_ultima_fecha_equipo$equipo=="Naranja"]))
