@@ -1,0 +1,6 @@
+https://fedetiberti.com/post/shiny-app-encuestas/
+https://fedetiberti.shinyapps.io/encuestas_app/
+https://github.com/fedetiberti/encuestas_app/blob/main/app_encuestas.R
+
+https://shinysurveys.jdtrat.com/articles/surveying-shinysurveys.html
+https://github.com/jdtrat/shinysurveys
