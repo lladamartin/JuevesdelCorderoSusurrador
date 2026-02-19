@@ -318,4 +318,87 @@ shinyApp(
 }
 ```
 
+```{r code8, eval=FALSE, warning=FALSE, include=FALSE}
+
+# 1. Preparar datos y asegurar que el eje X sea tratado como texto ordenado
+df_plot_res <- df_fecha_player %>%
+  mutate(
+    anio = format(as.Date(fecha), "%Y"),
+    fecha_str = as.character(as.Date(fecha)), # Mantiene el formato Date de la base
+    resultado_descriptivo = case_when(
+      resultado_label == "G" ~ "Ganado",
+      resultado_label == "E" ~ "Empatado",
+      resultado_label == "P" ~ "Perdido",
+      TRUE ~ "Sin Registro"
+    )
+  ) %>%
+  filter(!is.na(goles)) %>%
+  arrange(as.Date(fecha))
+
+# 2. Definir paleta de colores fija para evitar errores de asignación
+colores_resultado <- c("Ganado" = "#2ecc71", "Empatado" = "#f1c40f", "Perdido" = "#e74c3c")
+
+# Listas para los menús
+jugadores_unicos <- sort(unique(df_plot_res$player_nickname))
+anios_disponibles <- c("Todos", sort(unique(df_plot_res$anio), decreasing = TRUE))
+
+# 3. Construcción del gráfico
+p <- plot_ly(
+  data = df_plot_res,
+  x = ~fecha_str,
+  y = ~goles,
+  type = 'bar',
+  color = ~resultado_descriptivo,
+  colors = colores_resultado,
+  text = ~paste("Fecha:", fecha_str, "<br>Resultado:", resultado_descriptivo),
+  hoverinfo = "text",
+  # Usamos transforms para el filtrado dinámico
+  transforms = list(
+    list(
+      type = 'filter',
+      target = ~player_nickname,
+      operation = '=',
+      value = jugadores_unicos[1] # Jugador por defecto
+    ),
+    list(
+      type = 'filter',
+      target = ~anio,
+      operation = '==',
+      value = anios_disponibles # Por defecto muestra "Todos"
+    )
+  )
+) %>%
+  layout(
+    title = list(text = "Evolución de Goles y Resultados"),
+    xaxis = list(
+      title = "Fecha (Base de Datos)",
+      type = 'category', # Para que no falte ninguna fecha en el eje
+      categoryorder = "array",
+      categoryarray = ~fecha_str,
+      tickangle = -45
+    ),
+    yaxis = list(title = "Goles", dtick = 1),
+    margin = list(b = 100), # Espacio para las fechas
+    updatemenus = list(
+      # Filtro de Jugador
+      list(
+        x = -0.1, y = 0.8,
+        buttons = lapply(jugadores_unicos, function(x) {
+          list(method = "restyle", args = list("transforms[0].value", x), label = x)
+        })
+      ),
+      # Filtro de Año
+      list(
+        x = -0.1, y = 1,
+        buttons = lapply(anios_disponibles, function(x) {
+          # Si elige "Todos", pasamos el array completo de años para que no filtre ninguno
+          val <- if(x == "Todos") unique(df_plot_res$anio) else x
+          list(method = "restyle", args = list("transforms[1].value", val), label = paste("Año:", x))
+        })
+      )
+    )
+  )
+
+p
+```
 
