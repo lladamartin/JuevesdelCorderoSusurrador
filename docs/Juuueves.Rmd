@@ -34,7 +34,9 @@ knitr::opts_knit$set(root.dir = "C:/Users/TitiU/OneDrive/Documents/GitHub/Jueves
 En este sitio web van a encontrar el registro futbolero semanal del evento mas esperado de la semana: Jueves del Cordero Susurrador
 
 
-![](C:/Users/TitiU/OneDrive/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\parrot_1f99c.png)
+![](C:/Users/TitiU/OneDrive/Documents/GitHub/JuevesdelCorderoSusurrador\\docs\\WhatsApp Image 2026-02-20 at 4.38.04 PM.jpeg){width=25%}
+
+
 
 
 ### Registro
@@ -72,12 +74,12 @@ df_players_grupo = read_excel("./docs/Base Futbol Jueves del Cordero Susurrador.
 
 ```{r code2p,include=FALSE, warning=FALSE }
 ####### Pre-procesamiento
-# Base equipos y goles por jugador por fecha
+# Base a nivel jugador: equipos y goles  por fecha
 df_fecha_player = df_goals_date
 
 names(df_fecha_player) = tolower(names(df_fecha_player))
 
-# Base fecha-equipo-resultado LABEL
+# Base a nivel equipo: resultado por fecha
 df_fecha_goles = df_fecha_player %>% group_by(fecha,equipo) %>% summarize(goles = sum(goles)) 
 df_fecha_goles = as_tibble(df_fecha_goles)
 df_fecha_goles = df_fecha_goles %>% group_by(fecha) %>% spread(equipo,goles) %>%
@@ -96,6 +98,7 @@ resultado_label=="P"~0,
 resultado_label=="G"~3))
 
 # Merge
+# Base a nivel jugador: equipos, goles y puntos  por fecha
 df_fecha_player = df_fecha_player %>% left_join(df_fecha_goles,by=c("fecha","equipo"))
 
 ```
@@ -113,7 +116,7 @@ fechas_jugadas_all = sort(as.Date(unique(df_fecha_player$fecha[substr(df_fecha_p
 ```{r code2ppp,include=FALSE, warning=FALSE }
 # Tablas
 
-#tabla general
+#tabla general: acumulado por jugador
 
 df_tabla_general = df_fecha_player %>% filter(substr(fecha,1,4)==year_key) %>% group_by(player_nickname) %>% summarize(jugados = n_distinct(fecha),
 ganados = sum(resultado_label=="G"),
@@ -128,8 +131,7 @@ summarize(ultimos_partidos = paste(resultado_label,collapse=" "))
 
 df_tabla_general = df_tabla_general %>% left_join(df_rdo_ultimos ,by=c("player_nickname"))
 
-#tabla por jugador
-
+#tabla por jugador: para plot por jugador
 df_tabla_jugador = df_fecha_player
 
 
@@ -172,6 +174,7 @@ names(missing_counts) = c("Jugador","Numero de ausencias")
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Resultado última fecha</span>
 
 ```{r code3,include=T, warning=FALSE,echo=FALSE}
+# Tabla planel UTILMA FECHA
 #table gt 
 
 df_ultima_fecha_resultado %>%
@@ -190,9 +193,9 @@ df_ultima_fecha_resultado %>%
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Alineación</span>
 
 ```{r code5,include=T, warning=FALSE,echo=FALSE}
+# Tabla Alineacion
 #table gt 
 
-# Alineacion
 
 df_ultima_fecha_equipo = df_tabla_jugador %>% filter(fecha == ultima_fecha & player_nickname!="En contra")
 df_ultima_fecha_equipo = df_ultima_fecha_equipo %>% select(fecha,equipo,player_nickname)
@@ -210,6 +213,7 @@ df_ultima_fecha_equipo  %>%
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Registro de 🦜</span>
 
 ```{r code4,include=T, warning=FALSE,echo=FALSE}
+# Tabla LOROS
 #table gt 
 
 missing_counts %>% head(5) %>%
@@ -228,7 +232,7 @@ missing_counts %>% head(5) %>%
 ##### <span style="font-size: 20px; font-weight: bold; font-style: italic;">Estadística por jugador</span>
 
 ```{r code6,include=T, warning=FALSE,echo=FALSE}
-# Resultado por player
+# Resultado acumulados por jugador
 reactable(df_tabla_general,
   bordered = TRUE, striped = TRUE, highlight = TRUE, resizable = TRUE,
   defaultSorted = list(goles = "desc"),  # Ordenar por puntos de mayor a menor
@@ -318,4 +322,76 @@ shinyApp(
 }
 ```
 
+### Registro por jugador
+```{r code8, echo=FALSE, warning=FALSE, message=FALSE}
 
+# Usamos tu df_tabla_jugador
+df_aux <- df_tabla_jugador %>%
+  mutate(fecha = as.Date(fecha)) %>%
+  arrange(player_nickname, fecha)
+
+# 1. Preparar datos
+df_clean <- df_aux %>%
+  filter(!is.na(player_nickname)) %>%
+  group_by(player_nickname) %>%
+  mutate(
+    goles_totales = cumsum(goles),
+    puntos_totales = cumsum(puntos)
+  ) %>%
+  ungroup() %>%
+  arrange(player_nickname, fecha)
+
+jugadores <- sort(unique(df_clean$player_nickname))
+N <- length(jugadores)
+
+# 2. Inicializar el gráfico
+fig <- plot_ly()
+
+# 3. Agregar 4 trazas por cada jugador
+for (i in seq_along(jugadores)) {
+  nombre <- jugadores[i]
+  df_p <- df_clean %>% filter(player_nickname == nombre)
+  es_lucas <- (nombre == "Lucas")
+  
+  fig <- fig %>% 
+    add_trace(x = df_p$fecha, y = df_p$goles, name = nombre, type = "bar",
+              marker = list(color = '#1f77b4'), visible = es_lucas, yaxis = "y1", showlegend = FALSE) %>%
+    add_trace(x = df_p$fecha, y = df_p$puntos, name = nombre, type = "bar",
+              marker = list(color = '#ff7f0e'), visible = es_lucas, yaxis = "y2", showlegend = FALSE) %>%
+    add_trace(x = df_p$fecha, y = df_p$goles_totales, name = nombre, type = "scatter", mode = "lines",
+              line = list(color = '#2ca02c'), visible = es_lucas, yaxis = "y3", showlegend = FALSE) %>%
+    add_trace(x = df_p$fecha, y = df_p$puntos_totales, name = nombre, type = "scatter", mode = "lines",
+              line = list(color = '#d62728'), visible = es_lucas, yaxis = "y4", showlegend = FALSE)
+}
+
+# 4. Crear los botones
+botones <- lapply(seq_along(jugadores), function(i) {
+  vis_vector <- rep(FALSE, 4 * N)
+  vis_vector[(4 * i - 3):(4 * i)] <- TRUE
+  list(method = "update",
+       args = list(list(visible = as.list(vis_vector)),
+                   list(title = paste("Jugador:", jugadores[i]))),
+       label = jugadores[i])
+})
+
+# 5. Layout reducido para que quepa en el tabset
+idx_lucas <- which(jugadores == "Lucas") - 1
+
+fig <- fig %>% layout(
+  title = "Jugador: Lucas",
+  height = 700, # Reducido para evitar scroll infinito en la pestaña
+  xaxis = list(title = "Fecha", domain = c(0, 1)),
+  yaxis  = list(title = "Goles", domain = c(0.77, 1)),
+  yaxis2 = list(title = "Puntos", domain = c(0.52, 0.75)),
+  yaxis3 = list(title = "Goles Acum", domain = c(0.27, 0.5)),
+  yaxis4 = list(title = "Puntos Acum", domain = c(0, 0.25)),
+  updatemenus = list(list(y = 1.1, x = 0, active = as.integer(idx_lucas), buttons = botones)),
+  margin = list(t = 80, b = 40, l = 50, r = 20)
+)
+
+# Esto es clave para que se imprima en el HTML
+fig
+
+
+
+```
