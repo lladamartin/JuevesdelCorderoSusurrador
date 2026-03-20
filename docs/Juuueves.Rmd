@@ -323,8 +323,9 @@ shinyApp(
 ```
 
 ### Registro por jugador
-```{r code8, echo=FALSE, warning=FALSE, message=FALSE}
 
+```{r code8, echo=FALSE, warning=FALSE, message=FALSE}
+if (2==1){
 # Usamos tu df_tabla_jugador
 df_aux <- df_tabla_jugador %>%
   mutate(fecha = as.Date(fecha)) %>%
@@ -392,6 +393,123 @@ fig <- fig %>% layout(
 # Esto es clave para que se imprima en el HTML
 fig
 
+}
 
+```
 
+```{r code9, echo=FALSE, warning=FALSE, message=FALSE}
+
+# 1. Calendario de partidos reales
+fechas_partidos <- df_tabla_jugador %>%
+  mutate(fecha = as.Date(fecha)) %>%
+  pull(fecha) %>%
+  unique() %>%
+  sort()
+
+# 2. Preparar datos
+df_grafico <- df_tabla_jugador %>%
+  mutate(fecha = as.Date(fecha)) %>%
+  filter(!is.na(player_nickname)) %>%
+  group_by(player_nickname) %>%
+  mutate(asistio = 1) %>%
+  complete(fecha = fechas_partidos, fill = list(asistio = 0, goles = 0, puntos = 0)) %>%
+  mutate(
+    color_presencia = ifelse(asistio == 1, "rgba(173, 216, 230, 0.4)", "rgba(255, 100, 100, 0.3)"),
+    estado_texto = ifelse(asistio == 1, "Jugó", "No Jugó"),
+    fecha_label = as.character(fecha)
+  ) %>%
+  arrange(fecha) %>%
+  ungroup()
+
+jugadores <- sort(unique(df_grafico$player_nickname))
+N <- length(jugadores)
+
+fig <- plot_ly()
+
+# 3. Construcción de trazas
+for (i in seq_along(jugadores)) {
+  nombre <- jugadores[i]
+  df_p <- df_grafico %>% filter(player_nickname == nombre)
+  es_lucas <- (nombre == "Lucas")
+  
+  # --- PANEL GOLES (SUPERIOR) ---
+  fig <- fig %>% 
+    add_trace( # Fondo Goles
+      x = df_p$fecha_label, y = rep(1, nrow(df_p)), type = "bar",
+      marker = list(color = df_p$color_presencia, line = list(width = 0)),
+      hoverinfo = "text", text = paste("Fecha:", df_p$fecha, "<br><b>", df_p$estado_texto, "</b>"),
+      visible = es_lucas, yaxis = "y2", xaxis = "x", showlegend = FALSE
+    ) %>%
+    add_trace( # Barras Goles
+      x = df_p$fecha_label, y = df_p$goles, type = "bar",
+      marker = list(color = "#1f77b4"),
+      hoverinfo = "text", text = paste("Goles:", df_p$goles),
+      visible = es_lucas, yaxis = "y1", xaxis = "x", showlegend = FALSE
+    )
+  
+  # --- PANEL PUNTOS (INFERIOR) ---
+  fig <- fig %>% 
+    add_trace( # Fondo Puntos
+      x = df_p$fecha_label, y = rep(3, nrow(df_p)), type = "bar",
+      marker = list(color = df_p$color_presencia, line = list(width = 0)),
+      hoverinfo = "text", text = paste("Fecha:", df_p$fecha, "<br><b>", df_p$estado_texto, "</b>"),
+      visible = es_lucas, yaxis = "y4", xaxis = "x2", showlegend = FALSE
+    ) %>%
+    add_trace( # Barras Puntos
+      x = df_p$fecha_label, y = df_p$puntos, type = "bar",
+      marker = list(color = "#ff7f0e"),
+      hoverinfo = "text", text = paste("Puntos:", df_p$puntos),
+      visible = es_lucas, yaxis = "y3", xaxis = "x2", showlegend = FALSE
+    )
+}
+
+# 4. Botones
+botones <- lapply(seq_along(jugadores), function(i) {
+  vis_vector <- rep(FALSE, 4 * N)
+  vis_vector[(4 * i - 3):(4 * i)] <- TRUE
+  list(method = "update",
+       args = list(list(visible = as.list(vis_vector)),
+                   list(title = paste("Jugador:", jugadores[i]))),
+       label = jugadores[i])
+})
+
+# 5. Layout Final
+idx_lucas <- which(jugadores == "Lucas") - 1
+
+fig <- fig %>% layout(
+  title = list(text = "Análisis por Fecha por Jugador", x = 0.5),
+  barmode = "overlay",
+  
+  # Configuración de Ejes X Independientes (sin títulos de texto)
+  xaxis = list(title = "", type = "category", tickangle = -45, domain = c(0, 1), anchor = "y"),
+  xaxis2 = list(title = "", type = "category", tickangle = -45, domain = c(0, 1), anchor = "y3"),
+  
+  # Panel Superior: Goles (dtick = 1 asegura enteros)
+  yaxis  = list(title = "Goles", domain = c(0.58, 0.95), side = "left", dtick = 1),
+  yaxis2 = list(overlaying = "y", range = c(0, 1), showticklabels = FALSE, showgrid = FALSE),
+  
+  # Panel Inferior: Puntos
+  yaxis3 = list(
+    title = "Puntos", 
+    domain = c(0, 0.42), 
+    side = "left",
+    tickvals = c(0, 1, 3), 
+    range = c(0, 3.2)
+  ),
+  yaxis4 = list(overlaying = "y3", range = c(0, 3), showticklabels = FALSE, showgrid = FALSE),
+  
+  # Anotaciones
+  annotations = list(
+    list(x = 0.5, y = 0.98, xref = 'paper', yref = 'paper', showarrow = FALSE,
+         text = "<b>Goles</b> (Celeste: Jugó | Rojo: No Jugó)", xanchor = 'center'),
+    list(x = 0.5, y = 0.45, xref = 'paper', yref = 'paper', showarrow = FALSE,
+         text = "<b>Puntos</b> (Celeste: Jugó | Rojo: No Jugó)", xanchor = 'center')
+  ),
+  
+  updatemenus = list(list(y = 1.1, x = 0, active = as.integer(idx_lucas), buttons = botones)),
+  margin = list(t = 100, b = 100, l = 60, r = 20),
+  height = 950
+)
+
+fig
 ```
